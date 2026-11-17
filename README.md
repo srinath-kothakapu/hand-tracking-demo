@@ -1,75 +1,52 @@
-# Hand Tracking Demo (groundwork for an AI virtual mouse)
+# Hand Tracking Demo (first step towards an AI virtual mouse)
 
 ![CI](https://github.com/srinath-kothakapu/hand-tracking-demo/actions/workflows/ci.yml/badge.svg)
 
-This repository is the first visual hand-tracking stage of an AI virtual mouse idea; it was renamed from `ai-virtual-mouse` because the mouse control is not built yet. It opens a webcam, runs MediaPipe Hands on each captured frame, and draws detected hand landmarks and their connections on the video using OpenCV.
+This is the first step of an "AI virtual mouse" idea. I renamed the repo from `ai-virtual-mouse` because the mouse part isn't built yet. Right now it opens the webcam, runs MediaPipe Hands on every frame and draws the hand landmarks and their connections on the video with OpenCV.
 
-**The current code does not control the operating-system mouse.** It does not move the pointer, recognize click gestures, or send mouse or keyboard events. It is a camera and hand-landmark visualization prototype that provides a base for a future, explicitly implemented gesture-to-pointer feature.
+**It does not control the mouse.** It doesn't move the pointer, doesn't recognise click gestures and doesn't send any mouse or keyboard events. It just shows the hand landmarks, as a base for the actual gesture-to-pointer part later.
 
-## What the current version does
+## What it does now
 
 1. Opens the default webcam (`VideoCapture(0)`).
-2. Reads camera frames until the stream ends or the user requests exit.
-3. Converts each frame from OpenCV's BGR format to RGB for MediaPipe.
-4. Uses MediaPipe Hands to detect hand landmarks when hands are visible.
-5. Draws the detected landmarks and the built-in hand-connection graph on the original camera frame.
-6. Displays the annotated video in an OpenCV window titled **Hand Tracking**.
-7. Releases the camera and closes OpenCV windows when the application exits, including on an error path.
+2. Reads frames until the stream ends or you quit.
+3. Converts each frame from OpenCV's BGR to RGB for MediaPipe.
+4. Finds hand landmarks with MediaPipe Hands when a hand is visible.
+5. Draws the landmarks and connections on the original frame.
+6. Shows the result in a window called **Hand Tracking**.
+7. Releases the camera and closes the windows on exit, also when there's an error.
 
-The repository also includes `camera_test.py`, a minimal webcam preview to confirm that OpenCV can open and read the default camera without running hand detection, and an automated test suite in `tests/` that runs the real MediaPipe model on synthetic frames, so it needs no camera.
-
-## Data flow
+There's also `camera_test.py`, a plain webcam preview to check that OpenCV can open the camera at all, and tests in `tests/` that run the real MediaPipe model on generated frames, so they don't need a camera.
 
 ```text
-Webcam frame (BGR)
-       │
-       ▼
-OpenCV converts frame to RGB
-       │
-       ▼
-MediaPipe Hands detects landmarks
-       │
-       ▼
-OpenCV draws landmarks + connections
-       │
-       ▼
-Local preview window
+webcam frame (BGR) -> convert to RGB -> MediaPipe Hands -> draw landmarks -> preview window
 ```
 
-The existing scripts process camera frames for the on-screen preview. They do not contain code that stores frames or transmits them to a remote service. Camera permissions and operating-system camera access are still required.
+The scripts only show the frames on screen. They don't save frames or send them anywhere. The program still needs camera permission from the operating system.
 
 ## Requirements
 
-- Python 3.9 to 3.12 (MediaPipe 0.10.21 has no wheels for newer Python versions)
-- A webcam or another camera device accessible through OpenCV
-- A desktop session capable of opening an OpenCV display window
+- Python 3.9 to 3.12 (MediaPipe 0.10.21 has no wheels for newer versions)
+- a webcam OpenCV can open
+- a desktop session that can open an OpenCV window
 
-The project pins these direct dependencies:
+Pinned dependencies:
 
-| Package | Role |
-|---|---|
-| `mediapipe==0.10.21` | Hand landmark detection |
-| `opencv-python==4.11.0.86` | Camera capture, color conversion, drawing, and display |
-| `pytest` | Test runner |
+- `mediapipe==0.10.21` for the hand landmarks
+- `opencv-python==4.11.0.86` for camera, colour conversion, drawing and the window
+- `pytest` for the tests
 
-The versions are pinned deliberately. The code uses MediaPipe's `mp.solutions` API, which was removed in later releases (it is gone in 0.10.30 and newer), and newer OpenCV releases require a NumPy version that MediaPipe 0.10.21 does not support. Moving to a newer MediaPipe would mean porting the code to the MediaPipe Tasks `HandLandmarker` API.
+I pinned the versions on purpose. The code uses MediaPipe's `mp.solutions` API, which was removed later (it's gone from 0.10.30 on), and newer OpenCV versions need a NumPy version that MediaPipe 0.10.21 doesn't support. Moving to a newer MediaPipe would mean porting the code to the MediaPipe Tasks `HandLandmarker` API.
 
 ## Install
-
-Clone the repository and create an isolated Python environment:
 
 ```bash
 git clone https://github.com/srinath-kothakapu/hand-tracking-demo.git
 cd hand-tracking-demo
 python -m venv .venv
-```
 
-Activate the environment and install the pinned dependencies:
-
-```bash
 # Windows PowerShell
 .\.venv\Scripts\Activate.ps1
-
 # macOS / Linux
 source .venv/bin/activate
 
@@ -77,67 +54,64 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If installation fails, confirm that the selected Python interpreter is supported by the installed MediaPipe wheel for your operating system and CPU architecture. An environment without a graphical desktop may install the libraries but cannot display the preview window.
+If the install fails, check that your Python version, OS and CPU have a matching MediaPipe wheel. Without a desktop the libraries may install, but the window can't open.
 
-## Run hand tracking
+## Run it
 
 ```bash
 python hand_tracking.py
 ```
 
-Place one or more hands in view of the selected camera. Detected landmarks and the hand skeleton connections are drawn over the live image. Press **q** while the preview window is focused to quit.
+Hold one or two hands in front of the camera and the landmarks and skeleton lines get drawn on the live image. Press **q** in the window to quit.
 
-The program uses camera index `0` by default. If your device is exposed at a different index, change `cv2.VideoCapture(0)` in `hand_tracking.py` to the index reported by your local setup. The current project does not provide a command-line camera selector.
+It uses camera index `0`. If your camera has another index, change `cv2.VideoCapture(0)` in `hand_tracking.py`. There's no command-line option for this yet.
 
-## Test the camera separately
-
-Before troubleshooting hand detection, verify that the camera can be read by OpenCV:
+## Check the camera on its own
 
 ```bash
 python camera_test.py
 ```
 
-This opens a window titled **Camera Test** and displays the raw frame. Press **q** to close it. The script raises an explicit error if the default camera cannot be opened or a frame cannot be read.
+This opens a **Camera Test** window with the raw image. Press **q** to close it. If the camera can't be opened or a frame can't be read, it raises a clear error.
 
-## Run the tests
+## Tests
 
 ```bash
 python -m pytest
 ```
 
-The tests feed blank and random-noise frames through the real MediaPipe Hands model and check that the pipeline runs, that nothing is drawn when no hand is found, and that a missing camera raises a clear error. They run on every push through GitHub Actions. They do not measure detection accuracy; there is no hand-detection accuracy evaluation in this repository yet.
+The tests send blank and random-noise frames through the real MediaPipe Hands model. They check that the pipeline runs, that nothing gets drawn when there's no hand, and that a missing camera gives a clear error. GitHub Actions runs them on every push. They don't measure how well hands are detected; there's no accuracy evaluation in this repo yet.
 
-## Repository structure
+## Files
 
 ```text
-hand_tracking.py    Webcam capture, MediaPipe Hands inference, landmark rendering
-camera_test.py      Minimal OpenCV webcam preview without hand inference
-tests/              Pipeline smoke tests that run without a camera
-requirements.txt    Pinned MediaPipe, OpenCV and pytest dependencies
-.github/workflows/  CI that runs the tests on every push
+hand_tracking.py    webcam, MediaPipe Hands, drawing the landmarks
+camera_test.py      plain webcam preview without hand detection
+tests/              tests that run without a camera
+requirements.txt    pinned MediaPipe, OpenCV and pytest
+.github/workflows/  CI on every push
 ```
 
 ## Troubleshooting
 
-- **Could not open the default camera:** allow camera access for your terminal/editor, close other applications using the webcam, and check whether your device uses a different camera index.
-- **A preview window opens but frames fail:** check the camera connection and operating-system privacy settings. The script raises a `RuntimeError` when frame capture fails.
-- **No landmarks appear:** improve lighting, keep the hand in frame, and make sure it is not heavily occluded. The current scripts do not expose model confidence, detection thresholds, or tracking controls.
-- **The window will not start in a headless environment:** use a desktop session with an OpenCV-compatible display backend; this version has no headless output mode.
-- **`module 'mediapipe' has no attribute 'solutions'`:** you have a newer MediaPipe than the pinned 0.10.21; reinstall from `requirements.txt` in a fresh environment.
-- **Package installation fails:** check the Python version (3.9 to 3.12), operating system, CPU architecture, and wheel availability for both pinned dependencies.
+- **Can't open the camera:** give your terminal or editor camera permission, close other apps using the webcam, and try another camera index.
+- **Window opens but frames fail:** check the camera connection and the privacy settings. The script raises a `RuntimeError` when a frame can't be read.
+- **No landmarks:** use better light and keep the whole hand in the frame. The scripts don't expose confidence or threshold settings yet.
+- **No window on a headless machine:** you need a desktop session; there's no headless mode.
+- **`module 'mediapipe' has no attribute 'solutions'`:** your MediaPipe is newer than 0.10.21. Reinstall from `requirements.txt` in a fresh environment.
+- **Install fails:** check Python version (3.9 to 3.12), OS, CPU and wheel availability for both packages.
 
-## Scope and next steps
+## What's missing for a real virtual mouse
 
-The current version is deliberately limited to displaying hand landmarks. Building a usable virtual mouse would require additional features that are not present, such as:
+Right now it only shows landmarks. For an actual virtual mouse I would still need:
 
-- Mapping a filtered hand landmark to screen coordinates and calibrating the interaction area.
-- Smoothing motion and handling jitter, hand loss, camera movement, and changes in distance.
-- Explicit gesture definitions, click-state debouncing, and accidental-activation safeguards.
-- An opt-in operating-system input backend for pointer and click events.
-- Unit tests for coordinate mapping and gesture state, plus a manual usability evaluation (the existing tests only smoke-test the detection pipeline).
-- Clear permission and privacy controls before enabling any input automation.
+- mapping a filtered landmark to screen coordinates, with a calibrated area
+- smoothing against jitter, and handling a lost hand, camera movement and changing distance
+- defined gestures, click debouncing and protection against accidental clicks
+- an opt-in backend for real pointer and click events
+- unit tests for the coordinate mapping and gesture logic, and a manual usability test (the current tests only check that the pipeline runs)
+- clear permission and privacy controls before anything controls the computer
 
-## Privacy and responsible use
+## Privacy
 
-The current scripts display a webcam stream and do not implement recording or remote upload. Camera input is sensitive: use only a camera and environment that you are authorized to access, avoid exposing identifiable people in screenshots or recordings, and close the program when it is no longer needed. No cursor control or gesture-triggered system actions are implemented.
-
+The scripts only show the webcam image. They don't record or upload anything. Camera input is still sensitive: only use a camera and a place you're allowed to, don't show other people in screenshots or recordings, and close the program when you're done. Nothing in here controls the cursor or triggers system actions.
